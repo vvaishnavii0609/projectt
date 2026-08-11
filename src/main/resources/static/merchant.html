@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Merchant - Payment</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 420px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        .product {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .amount {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="product">
+        Smart Digital Watch
+    </div>
+
+    <div class="description">
+        Experience our secure payment journey.
+    </div>
+
+    <div class="amount">
+        ₹1.79
+    </div>
+
+    <button onclick="proceedToCheckout()">
+        Pay Now
+    </button>
+
+</div>
+
+
+<script>
+
+    function proceedToCheckout() {
+
+        window.location.href = "/checkout.html";
+    }
+
+</script>
+
+</body>
+
+</html>

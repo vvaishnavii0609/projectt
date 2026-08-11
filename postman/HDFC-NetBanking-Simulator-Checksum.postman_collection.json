@@ -1,0 +1,203 @@
+{
+  "info": {
+    "name": "HDFC NetBanking Simulator (with Checksum)",
+    "description": "Run 0-1-2-3-4-5-6-7 in order for a full end-to-end test. Step 2 now returns clean JSON (transactionId, orderId, amount, currency, status=PENDING, redirectUrl) - no manual CRC32 needed, every later step reuses pieces of the captured redirectUrl. '3x' deliberately corrupts the captured checksum to prove the bank rejects it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:9292" },
+    { "key": "orderId", "value": "" },
+    { "key": "amount", "value": "" },
+    { "key": "transactionId", "value": "" },
+    { "key": "bankUrl", "value": "" },
+    { "key": "bankUrlTampered", "value": "" },
+    { "key": "merchantRefNo", "value": "" },
+    { "key": "txnDate", "value": "" },
+    { "key": "txnAmount", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0 - Reset Database",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/admin/reset", "host": ["{{baseUrl}}"], "path": ["admin", "reset"] }
+      }
+    },
+    {
+      "name": "1 - Create Order (Merchant)",
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "const json = pm.response.json();",
+          "pm.collectionVariables.set('orderId', json.orderId);",
+          "pm.collectionVariables.set('amount', String(json.amount));",
+          "pm.test('order created', () => pm.expect(json.orderId).to.be.a('string'));",
+          "console.log('orderId =', json.orderId);"
+        ]}
+      }],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/merchant/order", "host": ["{{baseUrl}}"], "path": ["merchant", "order"] }
+      }
+    },
+    {
+      "name": "2 - Initiate Payment (Gateway builds + signs the HDFC request)",
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "const json = pm.response.json();",
+          "pm.test('status is PENDING', () => pm.expect(json.status).to.eql('PENDING'));",
+          "pm.test('has transactionId', () => pm.expect(json.transactionId).to.be.a('string'));",
+          "pm.test('has redirectUrl', () => pm.expect(json.redirectUrl).to.include('/netbanking/merchant'));",
+          "",
+          "pm.collectionVariables.set('transactionId', json.transactionId);",
+          "pm.collectionVariables.set('bankUrl', json.redirectUrl);",
+          "",
+          "function getParam(u, name) {",
+          "  const m = u.match(new RegExp('[?&]' + name + '=([^&]*)'));",
+          "  return m ? decodeURIComponent(m[1].replace(/\\+/g, ' ')) : null;",
+          "}",
+          "const url = json.redirectUrl;",
+          "const ref = getParam(url, 'MerchantRefNo');",
+          "const date = getParam(url, 'Date');",
+          "const amt = getParam(url, 'TxnAmount');",
+          "const checksum = getParam(url, 'CheckSum');",
+          "pm.collectionVariables.set('merchantRefNo', ref);",
+          "pm.collectionVariables.set('txnDate', date);",
+          "pm.collectionVariables.set('txnAmount', amt);",
+          "",
+          "const tamperedChecksum = '0' + checksum;",
+          "const tamperedUrl = url.replace('CheckSum=' + encodeURIComponent(checksum), 'CheckSum=' + encodeURIComponent(tamperedChecksum));",
+          "pm.collectionVariables.set('bankUrlTampered', tamperedUrl);",
+          "",
+          "console.log('transactionId =', json.transactionId);",
+          "console.log('merchantRefNo =', ref, ' txnDate =', date, ' txnAmount =', amt);"
+        ]}
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"orderId\": \"{{orderId}}\",\n    \"amount\": \"{{amount}}\",\n    \"paymentMethod\": \"NETBANKING\",\n    \"bankId\": \"HDFC\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/gateway/payment", "host": ["{{baseUrl}}"], "path": ["gateway", "payment"] }
+      }
+    },
+    {
+      "name": "3 - Land On Bank (browser would do this) -> 302 to bank-scenario.html",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{bankUrl}}" }
+      }
+    },
+    {
+      "name": "3x - Tampered Checksum (expect 400 rejection)",
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('rejected with 400', () => pm.response.to.have.status(400));",
+          "pm.test('reason mentions checksum', () => pm.expect(pm.response.text().toLowerCase()).to.include('checksum'));"
+        ]}
+      }],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{bankUrlTampered}}" }
+      }
+    },
+    {
+      "name": "4a - Authorize: SUCCESS",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "merchantRefNo", "value": "{{merchantRefNo}}" },
+            { "key": "scenario", "value": "SUCCESS" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/netbanking/authorize", "host": ["{{baseUrl}}"], "path": ["netbanking", "authorize"] }
+      }
+    },
+    {
+      "name": "4b - Authorize: FAILURE_INSUFFICIENT_FUNDS (run 1-3 fresh first!)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "merchantRefNo", "value": "{{merchantRefNo}}" },
+            { "key": "scenario", "value": "FAILURE_INSUFFICIENT_FUNDS" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/netbanking/authorize", "host": ["{{baseUrl}}"], "path": ["netbanking", "authorize"] }
+      }
+    },
+    {
+      "name": "4c - Authorize: PENDING (run 1-3 fresh first!)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "merchantRefNo", "value": "{{merchantRefNo}}" },
+            { "key": "scenario", "value": "PENDING" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/netbanking/authorize", "host": ["{{baseUrl}}"], "path": ["netbanking", "authorize"] }
+      }
+    },
+    {
+      "name": "4d - Authorize: TAMPER_AMOUNT (run 1-3 fresh first!)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "merchantRefNo", "value": "{{merchantRefNo}}" },
+            { "key": "scenario", "value": "TAMPER_AMOUNT" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/netbanking/authorize", "host": ["{{baseUrl}}"], "path": ["netbanking", "authorize"] },
+        "description": "Watch the console for AMOUNT MISMATCH after this."
+      }
+    },
+    {
+      "name": "5 - Verify Directly (Bank's raw truth)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/netbanking/verify?ClientCode=Client1&MerchantCode=MERCHANT&MerchantRefNo={{merchantRefNo}}&Date={{txnDate}}&TxnAmount={{txnAmount}}&TransactionId=XTXTV01&FlgVerify=Y",
+          "host": ["{{baseUrl}}"], "path": ["netbanking", "verify"],
+          "query": [
+            { "key": "ClientCode", "value": "Client1" },
+            { "key": "MerchantCode", "value": "MERCHANT" },
+            { "key": "MerchantRefNo", "value": "{{merchantRefNo}}" },
+            { "key": "Date", "value": "{{txnDate}}" },
+            { "key": "TxnAmount", "value": "{{txnAmount}}" },
+            { "key": "TransactionId", "value": "XTXTV01" },
+            { "key": "FlgVerify", "value": "Y" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6 - Gateway Status",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/gateway/status/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["gateway", "status", "{{orderId}}"] }
+      }
+    },
+    {
+      "name": "7 - Merchant Status (final answer, what the customer sees)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/merchant/transaction/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["merchant", "transaction", "{{orderId}}"] }
+      }
+    }
+  ]
+}

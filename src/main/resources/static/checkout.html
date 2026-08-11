@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Checkout</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
+        .container { width: 450px; margin: 60px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        h2 { text-align: center; }
+        .summary { padding: 15px; background: #f8f8f8; border-radius: 8px; margin: 20px 0; }
+        .row { display: flex; justify-content: space-between; margin: 10px 0; }
+        .amount { font-size: 22px; font-weight: bold; }
+        .section { margin-top: 25px; }
+        select { width: 100%; padding: 12px; margin-top: 10px; }
+        button { width: 100%; padding: 14px; margin-top: 25px; border: none; border-radius: 8px; font-size: 17px; cursor: pointer; }
+        button:disabled { opacity: .6; cursor: default; }
+        .error { color: #b91c1c; font-size: 13px; margin-top: 10px; display: none; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Checkout</h2>
+
+    <div class="summary">
+        <div class="row"><span>Product</span><span id="productName">Loading&hellip;</span></div>
+        <div class="row"><span>Order ID</span><span id="orderId"></span></div>
+        <div class="row amount"><span>Amount</span><span id="amountDisplay"></span></div>
+    </div>
+
+    <div class="section">
+        <h3>Payment Method</h3>
+        <select id="paymentMethod">
+            <option value="netbanking">Net Banking</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <h3>Bank</h3>
+        <select id="bankId">
+            <option value="HDFC">HDFC Bank</option>
+        </select>
+    </div>
+
+    <button id="payBtn" onclick="payNow()">Pay</button>
+    <div class="error" id="err"></div>
+
+</div>
+
+<script>
+    let currentOrder = null;
+
+    async function loadOrder() {
+        try {
+            const res = await fetch('/merchant/order');
+            if (!res.ok) throw new Error('Could not create order');
+            currentOrder = await res.json();
+            document.getElementById('productName').innerText = currentOrder.productName;
+            document.getElementById('orderId').innerText = currentOrder.orderId;
+            document.getElementById('amountDisplay').innerText = '₹' + currentOrder.amount;
+            document.getElementById('payBtn').innerText = 'Pay ₹' + currentOrder.amount;
+        } catch (e) {
+            document.getElementById('err').textContent = e.message;
+            document.getElementById('err').style.display = 'block';
+        }
+    }
+    loadOrder();
+
+    async function payNow() {
+        const btn = document.getElementById('payBtn');
+        const err = document.getElementById('err');
+        if (!currentOrder) return;
+
+        btn.disabled = true; btn.innerText = 'Redirecting to bank...'; err.style.display = 'none';
+
+        const paymentRequest = {
+            orderId: currentOrder.orderId,
+            amount: String(currentOrder.amount),
+            paymentMethod: document.getElementById('paymentMethod').value,
+            bankId: document.getElementById('bankId').value
+        };
+
+        try {
+            const response = await fetch('/gateway/payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paymentRequest)
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Payment initiation failed');
+
+            console.log("Gateway response:", data);
+            window.location.href = data.redirectUrl;
+
+        } catch (error) {
+            console.error(error);
+            err.textContent = error.message;
+            err.style.display = 'block';
+            btn.disabled = false; btn.innerText = 'Pay ₹' + currentOrder.amount;
+        }
+    }
+</script>
+
+</body>
+</html>
