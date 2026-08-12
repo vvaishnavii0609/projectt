@@ -63,11 +63,6 @@ public final class ChecksumUtil {
         return crc32(data);
     }
 
-    /**
-     * Used only by the bank simulator's CHECKSUM_TAMPER test scenario: deliberately
-     * returns a value that will NOT match a correctly recomputed checksum, so we can
-     * prove the Gateway's checksum-validation layer actually catches it.
-     */
     public static String tamper(String checksum) {
         return "0" + checksum;
     }

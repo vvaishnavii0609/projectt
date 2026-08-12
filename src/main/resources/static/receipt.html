@@ -1,120 +1,241 @@
 <!--<!DOCTYPE html>-->
 <!--<html lang="en">-->
 <!--<head>-->
-<!--<meta charset="UTF-8">-->
-<!--<title>Payment Status</title>-->
-<!--<style>-->
-<!--  body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }-->
-<!--  .container { width: 420px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align:center; }-->
-<!--  .icon { font-size: 48px; }-->
-<!--  h2 { margin: 12px 0 4px 0; }-->
-<!--  .sub { color:#666; margin-bottom: 20px; }-->
-<!--  .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; text-align:left; font-size:14px; }-->
-<!--  button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; background:#111; color:#fff; }-->
-<!--  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #d1d5db; border-top-color:#111; border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:middle; }-->
-<!--  @keyframes spin { to { transform: rotate(360deg); } }-->
-<!--</style>-->
+<!--  <meta charset="UTF-8">-->
+<!--  <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--  <title>Payment Status — ABC Store</title>-->
+<!--  <link rel="preconnect" href="https://fonts.googleapis.com">-->
+<!--  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">-->
+<!--  <link rel="stylesheet" href="/theme.css">-->
+<!--  <style>-->
+<!--    .status-icon { font-size: 42px; text-align: center; margin-bottom: 6px; }-->
+<!--    .status-title { font-family: var(&#45;&#45;font-display); font-size: 20px; font-weight: 600; text-align: center; }-->
+<!--    .status-sub { text-align: center; color: var(&#45;&#45;text-600); font-size: 13.5px; margin: 4px 0 20px; }-->
+
+<!--    /* Ticket-stub receipt: dashed tear line with circular notches cut into the sides */-->
+<!--    .receipt {-->
+<!--      position: relative;-->
+<!--      background: var(&#45;&#45;surface);-->
+<!--      border: 1px solid var(&#45;&#45;border);-->
+<!--      border-radius: 14px;-->
+<!--      overflow: hidden;-->
+<!--      box-shadow: var(&#45;&#45;shadow);-->
+<!--    }-->
+<!--    .receipt-body { padding: 20px 24px; }-->
+<!--    .tear {-->
+<!--      position: relative;-->
+<!--      height: 0;-->
+<!--      border-top: 2px dashed var(&#45;&#45;border);-->
+<!--      margin: 4px 0;-->
+<!--    }-->
+<!--    .tear::before, .tear::after {-->
+<!--      content: "";-->
+<!--      position: absolute;-->
+<!--      top: -11px;-->
+<!--      width: 22px; height: 22px;-->
+<!--      border-radius: 50%;-->
+<!--      background: var(&#45;&#45;bg);-->
+<!--    }-->
+<!--    .tear::before { left: -11px; }-->
+<!--    .tear::after { right: -11px; }-->
+<!--    .receipt-footer { padding: 16px 24px 20px; }-->
+
+<!--    .receipt-id { font-family: var(&#45;&#45;font-mono); font-size: 13px; letter-spacing: .02em; text-align: center; color: var(&#45;&#45;text-600); margin-top: 8px; }-->
+
+<!--    .refresh-btn {-->
+<!--      background: transparent; border: 1px solid var(&#45;&#45;border); color: var(&#45;&#45;text-900);-->
+<!--      margin-top: 14px;-->
+<!--    }-->
+<!--    .refresh-btn:hover { border-color: var(&#45;&#45;navy-700); }-->
+<!--  </style>-->
 <!--</head>-->
 <!--<body>-->
-<!--<div class="container">-->
-<!--  <div class="icon" id="icon">&#8987;</div>-->
-<!--  <h2 id="title">Checking payment status&hellip;</h2>-->
-<!--  <div class="sub" id="subtitle"><span class="spinner"></span>Contacting the payment gateway</div>-->
-<!--  <div id="rows"></div>-->
-<!--  <button id="refreshBtn">Refresh Status</button>-->
+<!--<div class="shell">-->
+<!--  <div class="topbar">-->
+<!--    <div class="wordmark"><span class="dot"></span>ABC Store</div>-->
+<!--    <span class="test-mode-badge">SIMULATOR</span>-->
+<!--  </div>-->
+
+<!--  <div class="stepper">-->
+<!--    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Order</div></div>-->
+<!--    <div class="step-line done"></div>-->
+<!--    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Pay</div></div>-->
+<!--    <div class="step-line done"></div>-->
+<!--    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Bank</div></div>-->
+<!--    <div class="step-line done"></div>-->
+<!--    <div class="step current"><div class="step-dot">4</div><div class="step-label">Confirm</div></div>-->
+<!--  </div>-->
+
+<!--  <div class="status-icon" id="icon">&#8987;</div>-->
+<!--  <div class="status-title" id="title">Checking payment status&hellip;</div>-->
+<!--  <div class="status-sub" id="subtitle"><span class="spinner"></span>Contacting the payment gateway</div>-->
+
+<!--  <div class="receipt">-->
+<!--    <div class="receipt-body">-->
+<!--      <div class="group-title" style="margin-top:0">Order Details</div>-->
+<!--      <div id="rows"></div>-->
+<!--    </div>-->
+<!--    <div class="tear"></div>-->
+<!--    <div class="receipt-footer">-->
+<!--      <div class="row"><span class="k">Transaction ID</span><span class="v" id="transactionId">-</span></div>-->
+<!--      <div class="row"><span class="k">Receipt No.</span><span class="v" id="receiptNo">-</span></div>-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  <button class="refresh-btn" id="refreshBtn">Refresh Status</button>-->
 <!--</div>-->
+
 <!--<script>-->
-<!--const params = new URLSearchParams(window.location.search);-->
-<!--const orderId = params.get('orderId');-->
-<!--let pollCount = 0;-->
-<!--const MAX_POLLS = 10; // ~20s auto-poll, covers the DELAY scenario comfortably-->
+<!--  const params = new URLSearchParams(window.location.search);-->
+<!--  const orderId = params.get('orderId');-->
+<!--  let pollCount = 0;-->
+<!--  const MAX_POLLS = 10; // ~20s auto-poll, covers the DELAY scenario comfortably-->
 
-<!--function render(t) {-->
-<!--  const icon = document.getElementById('icon');-->
-<!--  const title = document.getElementById('title');-->
-<!--  const subtitle = document.getElementById('subtitle');-->
-<!--  const rows = document.getElementById('rows');-->
-<!--  const terminal = t.status === 'SUCCESS' || t.status === 'FAILURE';-->
+<!--  function render(t) {-->
+<!--    const icon = document.getElementById('icon');-->
+<!--    const title = document.getElementById('title');-->
+<!--    const subtitle = document.getElementById('subtitle');-->
+<!--    const rows = document.getElementById('rows');-->
+<!--    const terminal = t.status === 'SUCCESS' || t.status === 'FAILURE';-->
 
-<!--  if (t.status === 'SUCCESS') {-->
-<!--    icon.textContent = '\u2705';-->
-<!--    title.textContent = 'Payment Successful';-->
-<!--    subtitle.textContent = 'Bank Ref No: ' + (t.bankRefNo || '-');-->
-<!--  } else if (t.status === 'FAILURE') {-->
-<!--    icon.textContent = '\u274C';-->
-<!--    title.textContent = 'Payment Failed';-->
-<!--    subtitle.textContent = t.message || 'The bank declined this transaction';-->
-<!--  } else if (t.status === 'PENDING') {-->
-<!--    icon.textContent = '\u23F3';-->
-<!--    title.textContent = 'Payment Pending';-->
-<!--    subtitle.textContent = t.message || 'Your payment is being processed';-->
-<!--  } else {-->
-<!--    icon.textContent = '\u23F3';-->
-<!--    title.textContent = 'Waiting for bank confirmation\u2026';-->
-<!--    subtitle.innerHTML = '<span class="spinner"></span>Status: ' + t.status;-->
-<!--  }-->
-
-<!--  rows.innerHTML =-->
-<!--    '<div class="row"><span>Order ID</span><span>' + t.orderId + '</span></div>' +-->
-<!--    '<div class="row"><span>Amount</span><span>' + t.currency + ' ' + t.amount + '</span></div>';-->
-
-<!--  return terminal;-->
-<!--}-->
-
-<!--async function checkStatus() {-->
-<!--  try {-->
-<!--    // The browser only ever talks to Merchant's own backend - never to the Gateway or-->
-<!--    // the Bank directly. Merchant is what actually calls PG's /gateway/status endpoint.-->
-<!--    const res = await fetch('/merchant/transaction/' + orderId);-->
-<!--    if (!res.ok) throw new Error('Could not reach payment gateway');-->
-<!--    const t = await res.json();-->
-<!--    const terminal = render(t);-->
-<!--    if (!terminal && pollCount < MAX_POLLS) {-->
-<!--      pollCount++;-->
-<!--      setTimeout(checkStatus, 2000);-->
+<!--    if (t.status === 'SUCCESS') {-->
+<!--      icon.textContent = '\u2705';-->
+<!--      title.textContent = 'Payment Successful';-->
+<!--      subtitle.innerHTML = '<span class="badge badge-success">Bank Ref: ' + (t.bankRefNo || '-') + '</span>';-->
+<!--    } else if (t.status === 'FAILURE') {-->
+<!--      icon.textContent = '\u274C';-->
+<!--      title.textContent = 'Payment Failed';-->
+<!--      subtitle.innerHTML = '<span class="badge badge-error">' + (t.message || 'The bank declined this transaction') + '</span>';-->
+<!--    } else if (t.status === 'PENDING') {-->
+<!--      icon.textContent = '\u23F3';-->
+<!--      title.textContent = 'Payment Pending';-->
+<!--      subtitle.textContent = t.message || 'Your payment is being processed';-->
+<!--    } else {-->
+<!--      icon.textContent = '\u23F3';-->
+<!--      title.textContent = 'Waiting for bank confirmation\u2026';-->
+<!--      subtitle.innerHTML = '<span class="spinner"></span>Status: ' + t.status;-->
 <!--    }-->
-<!--  } catch (e) {-->
-<!--    document.getElementById('title').textContent = 'Error';-->
-<!--    document.getElementById('subtitle').textContent = e.message;-->
-<!--  }-->
-<!--}-->
 
-<!--document.getElementById('refreshBtn').addEventListener('click', () => { pollCount = 0; checkStatus(); });-->
-<!--checkStatus();-->
+<!--    rows.innerHTML =-->
+<!--            '<div class="row"><span class="k">Order ID</span><span class="v">' + t.orderId + '</span></div>' +-->
+<!--            '<div class="row"><span class="k">Amount</span><span class="v amount">' + t.currency + ' ' + t.amount + '</span></div>';-->
+
+<!--    document.getElementById('transactionId').textContent = t.transactionId || '-';-->
+<!--    document.getElementById('receiptNo').textContent = t.receipt || '-';-->
+
+<!--    return terminal;-->
+<!--  }-->
+
+<!--  async function checkStatus() {-->
+<!--    try {-->
+<!--      // The browser only ever talks to Merchant's own backend - never to the Gateway or-->
+<!--      // the Bank directly. Merchant is what actually calls PG's /gateway/status endpoint.-->
+<!--      const res = await fetch('/merchant/transaction/' + orderId);-->
+<!--      if (!res.ok) throw new Error('Could not reach payment gateway');-->
+<!--      const t = await res.json();-->
+<!--      const terminal = render(t);-->
+<!--      if (!terminal && pollCount < MAX_POLLS) {-->
+<!--        pollCount++;-->
+<!--        setTimeout(checkStatus, 2000);-->
+<!--      }-->
+<!--    } catch (e) {-->
+<!--      document.getElementById('title').textContent = 'Error';-->
+<!--      document.getElementById('subtitle').textContent = e.message;-->
+<!--    }-->
+<!--  }-->
+
+<!--  document.getElementById('refreshBtn').addEventListener('click', () => { pollCount = 0; checkStatus(); });-->
+<!--  checkStatus();-->
 <!--</script>-->
 <!--</body>-->
 <!--</html>-->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Payment Successful</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful — ABC Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }
-    .container { width: 420px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align:center; }
-    .icon { font-size: 48px; }
-    h2 { margin: 12px 0 4px 0; }
-    .sub { color:#666; margin-bottom: 20px; }
-    .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
-    button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; background:#111; color:#fff; }
+    .status-icon { font-size: 42px; text-align: center; margin-bottom: 6px; }
+    .status-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; text-align: center; }
+    .status-sub { text-align: center; color: var(--text-600); font-size: 13.5px; margin: 4px 0 20px; }
+
+    /* Ticket-stub receipt: dashed tear line with circular notches cut into the sides */
+    .receipt {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .receipt-body { padding: 20px 24px; }
+    .tear {
+      position: relative;
+      height: 0;
+      border-top: 2px dashed var(--border);
+      margin: 4px 0;
+    }
+    .tear::before, .tear::after {
+      content: "";
+      position: absolute;
+      top: -11px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--bg);
+    }
+    .tear::before { left: -11px; }
+    .tear::after { right: -11px; }
+    .receipt-footer { padding: 16px 24px 20px; }
+
+    .receipt-id { font-family: var(--font-mono); font-size: 13px; letter-spacing: .02em; text-align: center; color: var(--text-600); margin-top: 8px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="icon">&#9989;</div>
-  <h2>Payment Successful</h2>
-  <div class="sub" id="subtitle">Loading receipt&hellip;</div>
-  <div id="rows"></div>
-  <button onclick="window.location.href='/merchant.html'">Back to Shop</button>
+<div class="shell">
+  <div class="topbar">
+    <div class="wordmark"><span class="dot"></span>ABC Store</div>
+    <span class="test-mode-badge">SIMULATOR</span>
+  </div>
+
+  <div class="stepper">
+    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Order</div></div>
+    <div class="step-line done"></div>
+    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Pay</div></div>
+    <div class="step-line done"></div>
+    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Bank</div></div>
+    <div class="step-line done"></div>
+    <div class="step done"><div class="step-dot">&#10003;</div><div class="step-label">Confirm</div></div>
+  </div>
+
+  <div class="status-icon">&#9989;</div>
+  <div class="status-title">Payment Successful</div>
+  <div class="status-sub" id="subtitle">Loading receipt&hellip;</div>
+
+  <div class="receipt">
+    <div class="receipt-body">
+      <div class="group-title" style="margin-top:0">Order Details</div>
+      <div id="rows"></div>
+    </div>
+    <div class="tear"></div>
+    <div class="receipt-footer">
+      <div class="row"><span class="k">Transaction ID</span><span class="v" id="transactionId">-</span></div>
+      <div class="row"><span class="k">Receipt No.</span><span class="v" id="receiptNo">-</span></div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="window.location.href='/merchant.html'">Back to Shop</button>
 </div>
+
 <script>
   // This page is only ever reached AFTER payment-processing.html has already
   // confirmed a terminal SUCCESS via the PG's Bank-Verify reconciliation.
-  // It does one confirming fetch and renders - no polling, no spinner here.
-  // If, for any reason, the transaction isn't actually SUCCESS yet (e.g. a
-  // bookmarked/refreshed link), it hands control back to the processing page
-  // rather than showing a receipt for a payment that isn't confirmed.
+  // One confirming fetch, no polling, no refresh button - if it's ever loaded
+  // before SUCCESS is actually confirmed, it hands control back to the
+  // processing page instead of showing a receipt for an unconfirmed payment.
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get('orderId');
 
@@ -129,13 +250,15 @@
         return;
       }
 
-      document.getElementById('subtitle').textContent = 'Your payment has been confirmed';
+      document.getElementById('subtitle').innerHTML =
+              '<span class="badge badge-success">Bank Ref: ' + (t.bankRefNo || '-') + '</span>';
+
       document.getElementById('rows').innerHTML =
-              '<div class="row"><span>Order ID</span><span>' + t.orderId + '</span></div>' +
-              '<div class="row"><span>Transaction ID</span><span>' + (t.transactionId || '-') + '</span></div>' +
-              '<div class="row"><span>Bank Ref No</span><span>' + (t.bankRefNo || '-') + '</span></div>' +
-              '<div class="row"><span>Amount</span><span>' + t.currency + ' ' + t.amount + '</span></div>' +
-              '<div class="row"><span>Receipt</span><span>' + (t.receipt || '-') + '</span></div>';
+              '<div class="row"><span class="k">Order ID</span><span class="v">' + t.orderId + '</span></div>' +
+              '<div class="row"><span class="k">Amount</span><span class="v amount">' + t.currency + ' ' + t.amount + '</span></div>';
+
+      document.getElementById('transactionId').textContent = t.transactionId || '-';
+      document.getElementById('receiptNo').textContent = t.receipt || '-';
     } catch (e) {
       document.getElementById('subtitle').textContent = e.message;
     }

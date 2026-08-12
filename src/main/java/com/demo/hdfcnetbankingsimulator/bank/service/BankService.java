@@ -98,10 +98,20 @@ public class BankService {
         t.setScenario(scenario);
 
         switch (scenario) {
-            case SUCCESS, DELAY, DUPLICATE, DROP -> {
+            case SUCCESS, DUPLICATE -> {
                 t.setStatus(TransactionStatus.SUCCESS);
                 t.setBankRefNo(generateBankRefNo());
                 t.setMessage("");
+            }
+            case DELAY -> {
+                t.setStatus(TransactionStatus.PENDING);
+                t.setBankRefNo("0");
+                t.setMessage("Bank response delayed - transaction pending confirmation");
+            }
+            case DROP -> {
+                t.setStatus(TransactionStatus.PENDING);
+                t.setBankRefNo("0");
+                t.setMessage("Callback not delivered - transaction pending, awaiting manual verification");
             }
             case TAMPER_AMOUNT -> {
                 t.setStatus(TransactionStatus.SUCCESS);
