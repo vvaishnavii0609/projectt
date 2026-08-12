@@ -14,15 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 
-/**
- * Fires the backend (server-to-server) callback at the Payment Gateway.
- * BankService decides WHAT happened; this class decides HOW RELIABLY the gateway
- * is told about it - exactly where DELAY / DROP / DUPLICATE fault injection lives,
- * and where TAMPER_AMOUNT / TAMPER_CHECKSUM actually corrupt the outgoing payload.
- *
- * The delay is a field (not a hardcoded literal) specifically so tests can override
- * it to a few milliseconds instead of waiting 6 real seconds.
- */
+
 @Service
 public class BankCallbackService {
 
@@ -41,41 +33,110 @@ public class BankCallbackService {
                 ? t.getDynamicUrl()
                 : EpiConstants.GATEWAY_BASE_URL + "/gateway/callback";
 
+        System.out.println();
+        System.out.println("============================================================");
+        System.out.println("                    BANK CALLBACK PROCESS");
+        System.out.println("============================================================");
+        System.out.println("[BANK] Transaction processing completed.");
+        System.out.println("[BANK] Scenario        : " + scenario);
+        System.out.println("[BANK] Merchant Ref No : " + t.getMerchantRefNo());
+        System.out.println("[BANK] Bank Ref No     : " + t.getBankRefNo());
+        System.out.println("[BANK] Final Status    : " + t.getStatus());
+        System.out.println("------------------------------------------------------------");
+
+
         switch (scenario) {
-            case DROP, SESSION_TIMEOUT -> System.out.println("[BANK -> callback] " + scenario + " for "
-                    + t.getMerchantRefNo() + " - deliberately NOT calling Gateway. Only Verify can recover this.");
+
+            case DROP, SESSION_TIMEOUT -> {
+
+                System.out.println("[BANK] CALLBACK NOT SENT");
+                System.out.println("[BANK] Scenario requires the callback to be dropped.");
+                System.out.println("[BANK] Payment Gateway will NOT receive the callback.");
+                System.out.println("[BANK] Gateway Verify must recover the transaction.");
+            }
+
+
             case DELAY -> {
-                System.out.println("[BANK -> callback] DELAY for " + t.getMerchantRefNo()
-                        + " - will fire in " + delayMillis + "ms");
+
+                System.out.println("[BANK] CALLBACK INITIATED");
+                System.out.println("[BANK] Callback will be sent to Payment Gateway after "
+                        + delayMillis + " ms.");
+                System.out.println("[BANK] Merchant Ref No : " + t.getMerchantRefNo());
+                System.out.println("[BANK] Callback URL    : " + callbackUrl);
+
                 new Thread(() -> {
-                    try { Thread.sleep(delayMillis); } catch (InterruptedException ignored) {}
+                    try {
+                        Thread.sleep(delayMillis);
+                    } catch (InterruptedException ignored) {
+                    }
+
                     fireOnce(t, callbackUrl);
                 }).start();
             }
+
+
             case DUPLICATE -> {
-                System.out.println("[BANK -> callback] DUPLICATE for " + t.getMerchantRefNo() + " - firing twice");
+
+                System.out.println("[BANK] CALLBACK INITIATED");
+                System.out.println("[BANK] Duplicate callback scenario selected.");
+                System.out.println("[BANK] Same transaction response will be sent TWICE.");
+                System.out.println("[BANK] Payment Gateway must handle the duplicate safely.");
+
                 fireOnce(t, callbackUrl);
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                fireOnce(t, callbackUrl); // same outcome, sent twice - gateway must be idempotent
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {
+                }
+
+                fireOnce(t, callbackUrl);
             }
-            default -> fireOnce(t, callbackUrl); // SUCCESS, all FAILURE_*, PENDING, TAMPER_AMOUNT, TAMPER_CHECKSUM
+
+
+            default -> {
+
+                System.out.println("[BANK] CALLBACK INITIATED");
+                System.out.println("[BANK] Bank will send the transaction result to Payment Gateway.");
+
+                fireOnce(t, callbackUrl);
+            }
         }
+
+        System.out.println("============================================================");
+        System.out.println();
     }
 
+
     private void fireOnce(BankTransaction t, String callbackUrl) {
-        System.out.println("[BANK -> callback] POST " + callbackUrl + "  merchantRefNo=" + t.getMerchantRefNo()
-                + " status=" + t.getStatus() + " bankRefNo=" + t.getBankRefNo());
+
         try {
-            // What actually goes out on the wire - starts as the truth, then the two
-            // TAMPER_* scenarios corrupt it, exactly mirroring BankService.verify()'s logic
-            // so a Gateway that only sees the callback (not Verify) would ALSO be fooled -
-            // which is precisely why Verify is mandatory, not optional.
+
+            // ---------------------------------------------------------
+            // STEP 1: Prepare the amount that will be sent in callback
+            // ---------------------------------------------------------
+
             String outgoingAmount = t.getTxnAmount();
+
             if (t.isTamperAmountInResponse()) {
-                outgoingAmount = new BigDecimal(t.getTxnAmount()).add(new BigDecimal("500.00")).toPlainString();
+
+                outgoingAmount = new BigDecimal(t.getTxnAmount())
+                        .add(new BigDecimal("500.00"))
+                        .toPlainString();
+
+                System.out.println();
+                System.out.println("[BANK] TEST SCENARIO: AMOUNT TAMPERING");
+                System.out.println("[BANK] Actual transaction amount : " + t.getTxnAmount());
+                System.out.println("[BANK] Amount sent in callback     : " + outgoingAmount);
+                System.out.println("[BANK] Gateway should detect the amount mismatch.");
             }
 
+
+            // ---------------------------------------------------------
+            // STEP 2: Create callback payload
+            // ---------------------------------------------------------
+
             CallbackPayload payload = new CallbackPayload();
+
             payload.setClientCode(t.getClientCode());
             payload.setMerchantCode(t.getMerchantCode());
             payload.setMerchantRefNo(t.getMerchantRefNo());
@@ -89,26 +150,138 @@ public class BankCallbackService {
             payload.setBankRefNo(t.getBankRefNo());
             payload.setMessage(t.getMessage());
 
+
+            // ---------------------------------------------------------
+            // STEP 3: Generate checksum
+            // ---------------------------------------------------------
+
             String checksum = ChecksumUtil.computeReturnChecksum(
-                    t.getClientCode(), t.getMerchantCode(), t.getTxnCurrency(), outgoingAmount, t.getTxnScAmount(),
-                    t.getMerchantRefNo(), t.getSuccessStaticFlag(), t.getFailureStaticFlag(), t.getTransactionDate(),
-                    t.getBankRefNo(), t.getMessage(), EpiConstants.CHECKSUM_KEY);
+                    t.getClientCode(),
+                    t.getMerchantCode(),
+                    t.getTxnCurrency(),
+                    outgoingAmount,
+                    t.getTxnScAmount(),
+                    t.getMerchantRefNo(),
+                    t.getSuccessStaticFlag(),
+                    t.getFailureStaticFlag(),
+                    t.getTransactionDate(),
+                    t.getBankRefNo(),
+                    t.getMessage(),
+                    EpiConstants.CHECKSUM_KEY
+            );
+
+
+            // ---------------------------------------------------------
+            // STEP 4: Deliberately corrupt checksum for test scenario
+            // ---------------------------------------------------------
 
             if (t.isTamperChecksumInResponse()) {
+
+                System.out.println();
+                System.out.println("[BANK] TEST SCENARIO: CHECKSUM TAMPERING");
+                System.out.println("[BANK] Original checksum generated.");
+                System.out.println("[BANK] Checksum will now be deliberately corrupted.");
+                System.out.println("[BANK] Gateway should reject the untrusted response.");
+
                 checksum = ChecksumUtil.tamper(checksum);
             }
+
             payload.setCheckSum(checksum);
 
-            System.out.println("[BANK -> callback] FULL PAYLOAD: " + payload);
+
+            // ---------------------------------------------------------
+            // STEP 5: Display callback information
+            // ---------------------------------------------------------
+
+            System.out.println();
+            System.out.println("------------------------------------------------------------");
+            System.out.println("              BANK -> PAYMENT GATEWAY");
+            System.out.println("                 CALLBACK INITIATED");
+            System.out.println("------------------------------------------------------------");
+
+            System.out.println("[BANK] Bank is sending transaction result to Payment Gateway.");
+            System.out.println("[BANK] Callback URL    : " + callbackUrl);
+            System.out.println("[BANK] Client Code     : " + payload.getClientCode());
+            System.out.println("[BANK] Merchant Code   : " + payload.getMerchantCode());
+            System.out.println("[BANK] Merchant Ref No  : " + payload.getMerchantRefNo());
+            System.out.println("[BANK] Transaction Amt  : " + payload.getTxnAmount());
+            System.out.println("[BANK] Currency         : " + payload.getTxnCurrency());
+            System.out.println("[BANK] Status           : " + payload.getStatus());
+            System.out.println("[BANK] Bank Ref No      : " + payload.getBankRefNo());
+            System.out.println("[BANK] Message          : " + payload.getMessage());
+            System.out.println("[BANK] Checksum         : " + payload.getCheckSum());
+
+            System.out.println("------------------------------------------------------------");
+
+
+            // ---------------------------------------------------------
+            // STEP 6: Create HTTP headers
+            // ---------------------------------------------------------
 
             HttpHeaders headers = new HttpHeaders();
+
             headers.setContentType(MediaType.APPLICATION_JSON);
-            restTemplate.postForEntity(callbackUrl, new HttpEntity<>(payload, headers), String.class);
-            System.out.println("[BANK -> callback] delivered OK for " + t.getMerchantRefNo());
+
+            System.out.println("[BANK] HTTP Method      : POST");
+            System.out.println("[BANK] Content-Type     : application/json");
+            System.out.println("[BANK] Preparing server-to-server callback...");
+            System.out.println("------------------------------------------------------------");
+
+
+            // ---------------------------------------------------------
+            // STEP 7: BANK -> PAYMENT GATEWAY
+            // ---------------------------------------------------------
+
+            System.out.println();
+            System.out.println("[BANK] Sending callback to Payment Gateway...");
+            System.out.println("[BANK] Bank Backend");
+            System.out.println("        |");
+            System.out.println("        | HTTP POST /gateway/callback");
+            System.out.println("        v");
+            System.out.println("[PAYMENT GATEWAY]");
+
+
+            restTemplate.postForEntity(
+                    callbackUrl,
+                    new HttpEntity<>(payload, headers),
+                    String.class
+            );
+
+
+            // ---------------------------------------------------------
+            // STEP 8: Callback successfully delivered
+            // ---------------------------------------------------------
+
+            System.out.println();
+            System.out.println("------------------------------------------------------------");
+            System.out.println("[BANK] CALLBACK SENT SUCCESSFULLY");
+            System.out.println("------------------------------------------------------------");
+            System.out.println("[BANK] Transaction result successfully delivered to Payment Gateway.");
+            System.out.println("[BANK] Merchant Ref No : " + t.getMerchantRefNo());
+            System.out.println("[BANK] Payment Gateway : " + callbackUrl);
+            System.out.println("[BANK] Gateway can now process the callback.");
+            System.out.println("------------------------------------------------------------");
+            System.out.println();
+
+
         } catch (Exception e) {
-            // A real bank doesn't crash its own processing because the gateway's endpoint
-            // happened to be down - it logs and moves on. The Gateway's Verify call recovers this.
-            System.out.println("[BANK -> callback] delivery FAILED for " + t.getMerchantRefNo() + ": " + e.getMessage());
+
+            // ---------------------------------------------------------
+            // CALLBACK DELIVERY FAILED
+            // ---------------------------------------------------------
+
+            System.out.println();
+            System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            System.out.println("              BANK CALLBACK DELIVERY FAILED");
+            System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            System.out.println("[BANK] Could not deliver transaction result to Payment Gateway.");
+            System.out.println("[BANK] Merchant Ref No : " + t.getMerchantRefNo());
+            System.out.println("[BANK] Callback URL    : " + callbackUrl);
+            System.out.println("[BANK] Reason          : " + e.getMessage());
+            System.out.println("[BANK] Transaction remains processed at Bank.");
+            System.out.println("[BANK] Gateway Verify can recover the final status.");
+            System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            System.out.println();
         }
     }
 }

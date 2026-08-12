@@ -46,7 +46,7 @@ public class AuthorizeController {
         bankCallbackService.sendCallback(t, scenario);
 
         String orderId = t.getRef1() == null ? "" : t.getRef1();
-        String redirectUrl = EpiConstants.MERCHANT_BASE_URL + "/receipt.html?orderId=" + orderId;
+        String redirectUrl = EpiConstants.MERCHANT_BASE_URL + "/payment-processing.html?orderId=" + orderId;
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Location", redirectUrl);

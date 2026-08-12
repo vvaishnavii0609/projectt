@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Failed</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }
+        .container { width: 420px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align:center; }
+        .icon { font-size: 48px; }
+        h2 { margin: 12px 0 4px 0; }
+        .sub { color:#666; margin-bottom: 20px; }
+        .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
+        button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; background:#111; color:#fff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="icon">&#10060;</div>
+    <h2>Payment Failed</h2>
+    <div class="sub" id="subtitle">Loading details&hellip;</div>
+    <div id="rows"></div>
+    <button onclick="window.location.href='/checkout.html'">Try Again</button>
+</div>
+<script>
+    // Mirrors receipt.html but for the FAILURE terminal state - only ever reached
+    // after payment-processing.html has confirmed FAILURE via PG's Bank-Verify
+    // reconciliation. One confirming fetch, no polling.
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('orderId');
+
+    async function loadFailure() {
+        try {
+            const res = await fetch('/merchant/transaction/' + orderId);
+            if (!res.ok) throw new Error('Could not reach payment gateway');
+            const t = await res.json();
+
+            if (t.status !== 'FAILURE') {
+                window.location.href = '/payment-processing.html?orderId=' + encodeURIComponent(orderId);
+                return;
+            }
+
+            document.getElementById('subtitle').textContent = t.message || 'The bank declined this transaction';
+            document.getElementById('rows').innerHTML =
+                '<div class="row"><span>Order ID</span><span>' + t.orderId + '</span></div>' +
+                '<div class="row"><span>Amount</span><span>' + t.currency + ' ' + t.amount + '</span></div>';
+        } catch (e) {
+            document.getElementById('subtitle').textContent = e.message;
+        }
+    }
+
+    loadFailure();
+</script>
+</body>
+</html>

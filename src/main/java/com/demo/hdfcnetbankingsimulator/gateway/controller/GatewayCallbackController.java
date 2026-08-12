@@ -19,9 +19,18 @@ public class GatewayCallbackController {
 
     @PostMapping("/callback")
     public ResponseEntity<String> handleCallback(@RequestBody CallbackPayload payload) {
-        System.out.println("[GATEWAY <- callback] FULL PAYLOAD RECEIVED: " + payload);
-        System.out.println("[GATEWAY <- callback] merchantRefNo=" + payload.getMerchantRefNo()
-                + " claimedStatus=" + payload.getStatus() + "  (NOT trusted yet - verifying independently)");
+        System.out.println();
+        System.out.println("============================================================");
+        System.out.println("       PAYMENT GATEWAY <- BANK CALLBACK RECEIVED");
+        System.out.println("============================================================");
+        System.out.println("[GATEWAY] Bank callback received successfully.");
+        System.out.println("[GATEWAY] Merchant Ref No : " + payload.getMerchantRefNo());
+        System.out.println("[GATEWAY] Claimed Status  : " + payload.getStatus());
+        System.out.println("[GATEWAY] Bank Ref No     : " + payload.getBankRefNo());
+        System.out.println("[GATEWAY] Amount          : " + payload.getTxnAmount());
+        System.out.println("[GATEWAY] Message         : " + payload.getMessage());
+        System.out.println("------------------------------------------------------------");
+
         String result = gatewayService.handleBankCallback(payload);
         System.out.println("[GATEWAY <- callback] result: " + result);
         return ResponseEntity.ok(result);

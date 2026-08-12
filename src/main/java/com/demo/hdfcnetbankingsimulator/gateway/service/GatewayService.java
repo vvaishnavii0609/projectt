@@ -37,10 +37,10 @@ public class GatewayService {
     public GatewayService() {
     }
 
-    public GatewayService(PaymentTransactionRepository repository, BankClient bankClient) {
-        this.repository = repository;
-        this.bankClient = bankClient;
-    }
+//    public GatewayService(PaymentTransactionRepository repository, BankClient bankClient) {
+//        this.repository = repository;
+//        this.bankClient = bankClient;
+//    }
 
     public PaymentInitiationResponse initiatePayment(CheckoutPaymentRequest request) {
 

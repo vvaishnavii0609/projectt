@@ -1,86 +1,147 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--<meta charset="UTF-8">-->
+<!--<title>Payment Status</title>-->
+<!--<style>-->
+<!--  body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }-->
+<!--  .container { width: 420px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align:center; }-->
+<!--  .icon { font-size: 48px; }-->
+<!--  h2 { margin: 12px 0 4px 0; }-->
+<!--  .sub { color:#666; margin-bottom: 20px; }-->
+<!--  .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; text-align:left; font-size:14px; }-->
+<!--  button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; background:#111; color:#fff; }-->
+<!--  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #d1d5db; border-top-color:#111; border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:middle; }-->
+<!--  @keyframes spin { to { transform: rotate(360deg); } }-->
+<!--</style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--  <div class="icon" id="icon">&#8987;</div>-->
+<!--  <h2 id="title">Checking payment status&hellip;</h2>-->
+<!--  <div class="sub" id="subtitle"><span class="spinner"></span>Contacting the payment gateway</div>-->
+<!--  <div id="rows"></div>-->
+<!--  <button id="refreshBtn">Refresh Status</button>-->
+<!--</div>-->
+<!--<script>-->
+<!--const params = new URLSearchParams(window.location.search);-->
+<!--const orderId = params.get('orderId');-->
+<!--let pollCount = 0;-->
+<!--const MAX_POLLS = 10; // ~20s auto-poll, covers the DELAY scenario comfortably-->
+
+<!--function render(t) {-->
+<!--  const icon = document.getElementById('icon');-->
+<!--  const title = document.getElementById('title');-->
+<!--  const subtitle = document.getElementById('subtitle');-->
+<!--  const rows = document.getElementById('rows');-->
+<!--  const terminal = t.status === 'SUCCESS' || t.status === 'FAILURE';-->
+
+<!--  if (t.status === 'SUCCESS') {-->
+<!--    icon.textContent = '\u2705';-->
+<!--    title.textContent = 'Payment Successful';-->
+<!--    subtitle.textContent = 'Bank Ref No: ' + (t.bankRefNo || '-');-->
+<!--  } else if (t.status === 'FAILURE') {-->
+<!--    icon.textContent = '\u274C';-->
+<!--    title.textContent = 'Payment Failed';-->
+<!--    subtitle.textContent = t.message || 'The bank declined this transaction';-->
+<!--  } else if (t.status === 'PENDING') {-->
+<!--    icon.textContent = '\u23F3';-->
+<!--    title.textContent = 'Payment Pending';-->
+<!--    subtitle.textContent = t.message || 'Your payment is being processed';-->
+<!--  } else {-->
+<!--    icon.textContent = '\u23F3';-->
+<!--    title.textContent = 'Waiting for bank confirmation\u2026';-->
+<!--    subtitle.innerHTML = '<span class="spinner"></span>Status: ' + t.status;-->
+<!--  }-->
+
+<!--  rows.innerHTML =-->
+<!--    '<div class="row"><span>Order ID</span><span>' + t.orderId + '</span></div>' +-->
+<!--    '<div class="row"><span>Amount</span><span>' + t.currency + ' ' + t.amount + '</span></div>';-->
+
+<!--  return terminal;-->
+<!--}-->
+
+<!--async function checkStatus() {-->
+<!--  try {-->
+<!--    // The browser only ever talks to Merchant's own backend - never to the Gateway or-->
+<!--    // the Bank directly. Merchant is what actually calls PG's /gateway/status endpoint.-->
+<!--    const res = await fetch('/merchant/transaction/' + orderId);-->
+<!--    if (!res.ok) throw new Error('Could not reach payment gateway');-->
+<!--    const t = await res.json();-->
+<!--    const terminal = render(t);-->
+<!--    if (!terminal && pollCount < MAX_POLLS) {-->
+<!--      pollCount++;-->
+<!--      setTimeout(checkStatus, 2000);-->
+<!--    }-->
+<!--  } catch (e) {-->
+<!--    document.getElementById('title').textContent = 'Error';-->
+<!--    document.getElementById('subtitle').textContent = e.message;-->
+<!--  }-->
+<!--}-->
+
+<!--document.getElementById('refreshBtn').addEventListener('click', () => { pollCount = 0; checkStatus(); });-->
+<!--checkStatus();-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Payment Status</title>
-<style>
-  body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }
-  .container { width: 420px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align:center; }
-  .icon { font-size: 48px; }
-  h2 { margin: 12px 0 4px 0; }
-  .sub { color:#666; margin-bottom: 20px; }
-  .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
-  button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; background:#111; color:#fff; }
-  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #d1d5db; border-top-color:#111; border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:middle; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
+  <meta charset="UTF-8">
+  <title>Payment Successful</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }
+    .container { width: 420px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align:center; }
+    .icon { font-size: 48px; }
+    h2 { margin: 12px 0 4px 0; }
+    .sub { color:#666; margin-bottom: 20px; }
+    .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
+    button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; background:#111; color:#fff; }
+  </style>
 </head>
 <body>
 <div class="container">
-  <div class="icon" id="icon">&#8987;</div>
-  <h2 id="title">Checking payment status&hellip;</h2>
-  <div class="sub" id="subtitle"><span class="spinner"></span>Contacting the payment gateway</div>
+  <div class="icon">&#9989;</div>
+  <h2>Payment Successful</h2>
+  <div class="sub" id="subtitle">Loading receipt&hellip;</div>
   <div id="rows"></div>
-  <button id="refreshBtn">Refresh Status</button>
+  <button onclick="window.location.href='/merchant.html'">Back to Shop</button>
 </div>
 <script>
-const params = new URLSearchParams(window.location.search);
-const orderId = params.get('orderId');
-let pollCount = 0;
-const MAX_POLLS = 10; // ~20s auto-poll, covers the DELAY scenario comfortably
+  // This page is only ever reached AFTER payment-processing.html has already
+  // confirmed a terminal SUCCESS via the PG's Bank-Verify reconciliation.
+  // It does one confirming fetch and renders - no polling, no spinner here.
+  // If, for any reason, the transaction isn't actually SUCCESS yet (e.g. a
+  // bookmarked/refreshed link), it hands control back to the processing page
+  // rather than showing a receipt for a payment that isn't confirmed.
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get('orderId');
 
-function render(t) {
-  const icon = document.getElementById('icon');
-  const title = document.getElementById('title');
-  const subtitle = document.getElementById('subtitle');
-  const rows = document.getElementById('rows');
-  const terminal = t.status === 'SUCCESS' || t.status === 'FAILURE';
+  async function loadReceipt() {
+    try {
+      const res = await fetch('/merchant/transaction/' + orderId);
+      if (!res.ok) throw new Error('Could not reach payment gateway');
+      const t = await res.json();
 
-  if (t.status === 'SUCCESS') {
-    icon.textContent = '\u2705';
-    title.textContent = 'Payment Successful';
-    subtitle.textContent = 'Bank Ref No: ' + (t.bankRefNo || '-');
-  } else if (t.status === 'FAILURE') {
-    icon.textContent = '\u274C';
-    title.textContent = 'Payment Failed';
-    subtitle.textContent = t.message || 'The bank declined this transaction';
-  } else if (t.status === 'PENDING') {
-    icon.textContent = '\u23F3';
-    title.textContent = 'Payment Pending';
-    subtitle.textContent = t.message || 'Your payment is being processed';
-  } else {
-    icon.textContent = '\u23F3';
-    title.textContent = 'Waiting for bank confirmation\u2026';
-    subtitle.innerHTML = '<span class="spinner"></span>Status: ' + t.status;
-  }
+      if (t.status !== 'SUCCESS') {
+        window.location.href = '/payment-processing.html?orderId=' + encodeURIComponent(orderId);
+        return;
+      }
 
-  rows.innerHTML =
-    '<div class="row"><span>Order ID</span><span>' + t.orderId + '</span></div>' +
-    '<div class="row"><span>Amount</span><span>' + t.currency + ' ' + t.amount + '</span></div>';
-
-  return terminal;
-}
-
-async function checkStatus() {
-  try {
-    // The browser only ever talks to Merchant's own backend - never to the Gateway or
-    // the Bank directly. Merchant is what actually calls PG's /gateway/status endpoint.
-    const res = await fetch('/merchant/transaction/' + orderId);
-    if (!res.ok) throw new Error('Could not reach payment gateway');
-    const t = await res.json();
-    const terminal = render(t);
-    if (!terminal && pollCount < MAX_POLLS) {
-      pollCount++;
-      setTimeout(checkStatus, 2000);
+      document.getElementById('subtitle').textContent = 'Your payment has been confirmed';
+      document.getElementById('rows').innerHTML =
+              '<div class="row"><span>Order ID</span><span>' + t.orderId + '</span></div>' +
+              '<div class="row"><span>Transaction ID</span><span>' + (t.transactionId || '-') + '</span></div>' +
+              '<div class="row"><span>Bank Ref No</span><span>' + (t.bankRefNo || '-') + '</span></div>' +
+              '<div class="row"><span>Amount</span><span>' + t.currency + ' ' + t.amount + '</span></div>' +
+              '<div class="row"><span>Receipt</span><span>' + (t.receipt || '-') + '</span></div>';
+    } catch (e) {
+      document.getElementById('subtitle').textContent = e.message;
     }
-  } catch (e) {
-    document.getElementById('title').textContent = 'Error';
-    document.getElementById('subtitle').textContent = e.message;
   }
-}
 
-document.getElementById('refreshBtn').addEventListener('click', () => { pollCount = 0; checkStatus(); });
-checkStatus();
+  loadReceipt();
 </script>
 </body>
 </html>
