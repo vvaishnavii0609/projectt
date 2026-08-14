@@ -5,8 +5,7 @@ import com.demo.hdfcnetbankingsimulator.gateway.model.PaymentTransaction;
 import com.demo.hdfcnetbankingsimulator.gateway.service.GatewayService;
 import org.springframework.web.bind.annotation.*;
 
-/** Polled (indirectly, via Merchant's own /merchant/transaction endpoint) after every
- *  checkout. Triggers an on-demand Verify if nothing conclusive has arrived yet. */
+
 @RestController
 @RequestMapping("/gateway")
 @CrossOrigin

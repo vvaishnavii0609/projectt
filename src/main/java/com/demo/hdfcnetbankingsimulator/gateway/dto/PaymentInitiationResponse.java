@@ -1,12 +1,6 @@
 package com.demo.hdfcnetbankingsimulator.gateway.dto;
 
-/**
- * What POST /gateway/payment actually returns now - a clean JSON transaction summary,
- * status always "PENDING" at this point (nothing has happened at the bank yet).
- * redirectUrl is the one field beyond the target architecture's bare example: the
- * browser genuinely needs to know where to go next, so it travels alongside the
- * clean fields rather than the whole response being a bare redirect string.
- */
+
 public class PaymentInitiationResponse {
 
     private String transactionId;

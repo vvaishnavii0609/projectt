@@ -1,6 +1,5 @@
 package com.demo.hdfcnetbankingsimulator.bank.dto;
 
-/** Ch.8 "Verify Transaction" response - must match gateway/dto/VerificationResponse's shape exactly. */
 public class VerificationResponse {
 
     private String merchantCode;

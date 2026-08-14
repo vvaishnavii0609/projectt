@@ -1,11 +1,5 @@
 package com.demo.hdfcnetbankingsimulator.gateway.dto;
 
-/**
- * Ch.8 "Verify Transaction" response, as seen from the Gateway side.
- * Fields mirror what the real HDFC doc's Ch.8-C says the verify response echoes back:
- * MerchantCode, Date, MerchantRefNo, ClientCode, TxnAmount, TransactionId, Ref1,
- * flgVerify, BankRefNo, flgSuccess, Message.
- */
 public class VerificationResponse {
 
     // echoed identity/lookup fields - the Gateway cross-checks these against what it sent

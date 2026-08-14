@@ -52,7 +52,6 @@ public final class ChecksumUtil {
         return crc32(forwardChecksumString(p, checksumKey));
     }
 
-    /** Simplified to skip Ref1-11/Date1/Date2 (this demo always leaves them empty anyway). */
     public static String computeReturnChecksum(String clientCode, String merchantCode, String txnCurrency,
                                                 String txnAmount, String txnScAmount, String merchantRefNo,
                                                 String successStaticFlag, String failureStaticFlag, String date,

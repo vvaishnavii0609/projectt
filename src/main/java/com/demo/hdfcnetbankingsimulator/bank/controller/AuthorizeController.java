@@ -13,11 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Finalizes the outcome, fires the S2S callback, then sends the browser back to the
- * merchant with a REAL HTTP redirect - no HTML interstitial page, no JS timer.
- * SESSION_TIMEOUT is the only scenario where nothing is sent anywhere at all.
- */
+
 @RestController
 public class AuthorizeController {
 

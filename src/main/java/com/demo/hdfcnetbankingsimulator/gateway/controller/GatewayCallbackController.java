@@ -5,7 +5,6 @@ import com.demo.hdfcnetbankingsimulator.gateway.service.GatewayService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/** "Bank Backend -> Gateway Backend" callback receiver. */
 @RestController
 @RequestMapping("/gateway")
 @CrossOrigin

@@ -1,9 +1,5 @@
 package com.demo.hdfcnetbankingsimulator.gateway.dto;
 
-/** Body of the backend (server-to-server) callback the bank fires at us. Must match
- *  bank/dto/CallbackPayload's shape exactly (Jackson matches by JSON property name).
- *  This is a HINT, not the source of truth - handleBankCallback() immediately
- *  re-confirms via the S2S Verify endpoint before trusting any of this. */
 public class CallbackPayload {
 
     private String clientCode;

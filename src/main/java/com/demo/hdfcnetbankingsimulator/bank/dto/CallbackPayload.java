@@ -1,6 +1,5 @@
 package com.demo.hdfcnetbankingsimulator.bank.dto;
 
-/** Body sent to the Gateway's S2S callback endpoint - must match gateway/dto/CallbackPayload's shape. */
 public class CallbackPayload {
 
     private String clientCode;

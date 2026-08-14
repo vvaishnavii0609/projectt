@@ -15,11 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
-/**
- * The real EPI entry point (Ch.2). Pure logic - no HTML here. On success, redirects
- * the browser to the static control-panel page (static/bank-scenario.html), passing
- * just enough via query params for that page to display itself and know what to submit.
- */
+
 @RestController
 public class EpiController {
 

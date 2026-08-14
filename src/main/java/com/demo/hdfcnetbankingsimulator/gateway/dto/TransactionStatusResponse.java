@@ -1,8 +1,6 @@
 package com.demo.hdfcnetbankingsimulator.gateway.dto;
 
-/** What GatewayStatusController actually returns - deliberately just plain Strings
- *  (no LocalDateTime, no internal id) so this is a stable, simple contract for anyone
- *  calling PG's status endpoint, and there's no Jackson date-handling risk on either side. */
+
 public class TransactionStatusResponse {
 
     private String orderId;

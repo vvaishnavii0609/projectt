@@ -130,9 +130,6 @@ public class GatewayService {
         return b.build().encode().toUriString();
     }
 
-    /** "Bank Backend -> Gateway Backend" callback receiver. Never the final word -
-     *  immediately fires the S2S Verify call and treats THAT as authoritative.
-     *  Also where duplicate-callback idempotency is enforced. */
     public String handleBankCallback(CallbackPayload payload) {
 
         PaymentTransaction transaction = repository.findByMerchantRefNo(payload.getMerchantRefNo()).orElse(null);
@@ -166,17 +163,7 @@ public class GatewayService {
         return repository.findByMerchantRefNo(merchantRefNo).orElse(null);
     }
 
-    /**
-     * The actual S2S "Status Inquiry" call, shared by both the callback handler and
-     * on-demand checks. Implements everything your own theory doc's step 25/29-6 asks for:
-     *   1. Recompute and validate the response checksum (catches in-transit tampering)
-     *   2. Confirm the echoed ClientCode/MerchantRefNo actually match this transaction
-     *   3. Confirm the echoed TxnAmount matches what WE originally sent (catches
-     *      amount-tampering even if the checksum itself is internally consistent)
-     *   4. Only THEN translate flgSuccess into a final status
-     * Any failure of 1-3 means we do NOT trust this response - the transaction is left
-     * as-is (retryable later) rather than being marked FAILURE from bad data.
-     */
+
     private String reconcileWithBank(PaymentTransaction transaction) {
         try {
             VerificationResponse verify = bankClient.verify(transaction);

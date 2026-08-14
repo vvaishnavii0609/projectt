@@ -25,8 +25,7 @@ public class BankClient {
         this.restTemplate = restTemplate;
     }
 
-    /** Ch.8 "Verify Transaction" - looked up by ClientCode + MerchantRefNo + Date + TxnAmount,
-     *  exactly the identifying fields the HDFC doc specifies (Ch.8-B). */
+
     public VerificationResponse verify(PaymentTransaction t) {
         String url = UriComponentsBuilder.fromUriString(BANK_BASE_URL + "/netbanking/verify")
                 .queryParam("MerchantCode", EpiConstants.MERCHANT_CODE)
